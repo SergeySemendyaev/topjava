@@ -32,21 +32,33 @@ public class UserMealsUtil {
         // TODO return filtered list with excess. Implement by cycles
         List<UserMealWithExcess> result = new ArrayList<>();
         Map<LocalDate, Integer> dailyCalorage = new HashMap<>();
-        for (UserMeal meal : meals) {
-            int calories = meal.getCalories();
-            if (dailyCalorage.containsKey(meal.getDateTime().toLocalDate())) {
-                calories += dailyCalorage.get(meal.getDateTime().toLocalDate());
-            }
-            dailyCalorage.put(meal.getDateTime().toLocalDate(), calories);
-        }
+        Map<LocalDate, List<UserMealWithExcess>> mealMap = new HashMap<>();
 
         for (UserMeal meal : meals) {
-            if (dailyCalorage.get(meal.getDateTime().toLocalDate()) > caloriesPerDay &&
-                 meal.getDateTime().toLocalTime().isAfter(startTime) &&
-                 meal.getDateTime().toLocalTime().isBefore(endTime)) {
-                result.add(new UserMealWithExcess(meal.getDateTime(), meal.getDescription(), meal.getCalories(), true));
+            LocalDateTime dateTime = meal.getDateTime();
+            LocalDate localDate = dateTime.toLocalDate();
+            int calorage = meal.getCalories();
+            if (dailyCalorage.containsKey(localDate)) {
+                calorage += dailyCalorage.get(localDate);
+            }
+
+            dailyCalorage.put(localDate, calorage);
+            LocalTime localTime = dateTime.toLocalTime();
+            if (localTime.isAfter(startTime) && localTime.isBefore(endTime)) {
+                if (!mealMap.containsKey(localDate)) {
+                    mealMap.put(localDate, new ArrayList<>());
+                }
+                mealMap.get(localDate).add(new UserMealWithExcess(dateTime, meal.getDescription(), meal.getCalories(), true));
             }
         }
+
+        for (Map.Entry<LocalDate, Integer> pair : dailyCalorage.entrySet()) {
+            Integer value = pair.getValue();
+            if (value > caloriesPerDay) {
+                result.addAll(mealMap.get(pair.getKey()));
+            }
+        }
+
         return result;
     }
 
